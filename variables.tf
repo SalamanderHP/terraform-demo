@@ -38,7 +38,7 @@ variable "variables_sub_cidr" {
 variable "variables_sub_az" {
   description = "Availability Zone used Variables Subnet"
   type        = string
-  default     = "ap-southeast-1"
+  default     = "ap-southeast-1a"
 }
 
 variable "variables_sub_auto_ip" {
@@ -49,6 +49,6 @@ variable "variables_sub_auto_ip" {
 
 variable "environment" {
   description = "Environment for deployment"
-  type = string
-  default = "dev"
+  type        = string
+  default     = "dev"
 }
