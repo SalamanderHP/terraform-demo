@@ -1,12 +1,18 @@
 # Configure the AWS Provider
 provider "aws" {
-  region = "ap-southeast-1"
+  region  = "ap-southeast-1"
   profile = "default"
 }
 
 #Retrieve the list of AZs in the current AWS region
 data "aws_availability_zones" "available" {}
 data "aws_region" "current" {}
+
+locals {
+  team = "api_mgmt_dev"
+  application = "corp_api"
+  server_name = "ec2-${var.environment}-api-${var.variables_sub_az}"
+}
 
 #Define the VPC
 resource "aws_vpc" "vpc" {
@@ -140,6 +146,75 @@ resource "aws_instance" "web_server" {
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public_subnets["public_subnet_1"].id
   tags = {
-    Name = "Ubuntu EC2 Server"
+    Name = local.server_name
+    Owner = local.team
+    App = local.application
+  }
+}
+
+resource "aws_s3_bucket" "my-new-S3-bucket" {
+  bucket = "salamanderhp-demo-bucket-${random_id.randomness.hex}"
+
+  tags = {
+    Name    = "My S3 Bucket"
+    Purpose = "Demo S3 Bucket"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "my_new_bucket_acl" {
+  bucket = aws_s3_bucket.my-new-S3-bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_security_group" "my-new-security-group" {
+  name        = "web_server_inbound"
+  description = "Allow inbound traffic on tcp/443"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    description = "Allow 443 from the Internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow 80 from the Internet"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all traffic outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name    = "web_server_inbound"
+    Purpose = "Intro to Resource Blocks Lab"
+  }
+}
+
+resource "random_id" "randomness" {
+  byte_length = 16
+}
+
+resource "aws_subnet" "variables-subnet" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.variables_sub_cidr
+  availability_zone       = var.variables_sub_az
+  map_public_ip_on_launch = var.variables_sub_auto_ip
+
+  tags = {
+    Name      = "sub-variables-us-east-1a"
+    Terraform = "true"
   }
 }
