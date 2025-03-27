@@ -257,3 +257,42 @@ resource "aws_key_pair" "generated" {
     ignore_changes = [key_name]
   }
 }
+
+module "server" {
+  source    = "./modules/server"
+  ami       = data.aws_ami.ubuntu.id
+  subnet_id = aws_subnet.public_subnets["public_subnet_3"].id
+  security_groups = [
+    aws_security_group.my-new-security-group.id,
+  ]
+}
+
+output "public_ip" {
+  value = module.server.public_ip
+}
+
+output "public_dns" {
+  value = module.server.public_dns
+}
+
+output "size" {
+  value = module.server.size
+}
+
+module "server_subnet_1" {
+  source          = "./modules/web_server"
+  ami             = data.aws_ami.ubuntu.id
+  key_name        = aws_key_pair.generated.key_name
+  user            = "ubuntu"
+  private_key     = tls_private_key.generated.private_key_pem
+  subnet_id       = aws_subnet.public_subnets["public_subnet_1"].id
+  security_groups = [aws_security_group.my-new-security-group.id]
+}
+
+output "public_ip_server_subnet_1" {
+  value = module.server_subnet_1.public_ip
+}
+
+output "public_dns_server_subnet_1" {
+  value = module.server_subnet_1.public_dns
+}
