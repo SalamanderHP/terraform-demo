@@ -10,6 +10,26 @@ locals {
   server_name = "ec2-${var.environment}-api-${var.variables_sub_az}"
 }
 
+locals {
+  ingress_rules = [
+    {
+      description = "Allow ssh from port 22",
+      from_port   = 22,
+      to_port     = 22
+    },
+    {
+      description = "Allow 80 from the Internet"
+      from_port   = 80
+      to_port     = 80
+    },
+    {
+      description = "Allow 443 from the Internet"
+      from_port   = 443
+      to_port     = 443
+    }
+  ]
+}
+
 # Terraform Data Block - To Lookup Latest Ubuntu 20.04 AMI Image
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -77,29 +97,15 @@ resource "aws_security_group" "my-new-security-group" {
   description = "Allow inbound & outbound traffic"
   vpc_id      = module.vpc.vpc_id
 
-  ingress {
-    cidr_blocks = [
-      "0.0.0.0/0"
-    ]
-    from_port = 22
-    to_port   = 22
-    protocol  = "tcp"
-  }
-
-  ingress {
-    description = "Allow 443 from the Internet"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Allow 80 from the Internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  dynamic "ingress" {
+    for_each = local.ingress_rules
+    content {
+      description = ingress.value.description
+      from_port   = ingress.value.from_port
+      to_port     = ingress.value.to_port
+      cidr_blocks = ["0.0.0.0/0"]
+      protocol    = "tcp"
+    }
   }
 
   egress {
