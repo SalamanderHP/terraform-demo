@@ -120,6 +120,10 @@ resource "aws_security_group" "my-new-security-group" {
     Name    = "web_server_inbound"
     Purpose = "Intro to Resource Blocks Lab"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "random_id" "randomness" {
